@@ -28,9 +28,21 @@ func IsNil(x any) bool {
 	}
 
 	v := reflect.ValueOf(x)
-	if v.Kind() == reflect.Ptr {
-		return v.IsNil()
+	if !v.IsValid() {
+		return true
 	}
 
-	return false
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Slice:
+		return v.IsNil()
+	case reflect.Ptr:
+		elem := v.Elem()
+		if elem.IsValid() {
+			return IsNil(elem.Interface())
+		} else {
+			return true
+		}
+	default:
+		return false
+	}
 }
