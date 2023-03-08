@@ -230,6 +230,13 @@ func WithDSN(dsn string) Option {
 	return func(cfg *Config) {
 		opts, err := parseDSN(dsn)
 		if err != nil {
+			opts, err := parseKVDSN(dsn)
+			if err == nil {
+				for _, opt := range opts {
+					opt(cfg)
+				}
+				return
+			}
 			panic(err)
 		}
 		for _, opt := range opts {
@@ -243,6 +250,54 @@ func env(key, defValue string) string {
 		return s
 	}
 	return defValue
+}
+
+// It's just a temporary solution
+func parseKVDSN(dsn string) ([]Option, error) {
+	opts := make([]Option, 0)
+	host := ""
+	port := ""
+	for _, pair := range strings.Split(dsn, " ") {
+
+		pair = strings.TrimSpace(pair)
+		if pair == "" {
+			continue
+		}
+
+		kv := strings.SplitN(pair, "=", 2)
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("dsn %s not key value pairs", dsn)
+		}
+		key := strings.ToLower(kv[0])
+		value := kv[1]
+		switch key {
+		case "host":
+			host = value
+		case "user":
+			opts = append(opts, func(cfg *Config) {
+				cfg.User = value
+			})
+		case "password":
+			opts = append(opts, func(cfg *Config) {
+				cfg.Password = value
+			})
+		case "port":
+			port = value
+		case "dbname":
+			opts = append(opts, func(cfg *Config) {
+				cfg.Database = value
+			})
+		}
+	}
+
+	if port != "" {
+		host = host + ":" + port
+	}
+	opts = append(opts, func(cfg *Config) {
+		cfg.Addr = host
+	})
+
+	return opts, nil
 }
 
 func parseDSN(dsn string) ([]Option, error) {
