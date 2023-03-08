@@ -20,4 +20,9 @@ func TestNewConfigByDSN(t *testing.T) {
 	_, err = NewConfigByDSN("asdasdasd")
 	assert.NotNil(t, err)
 
+	dsn = "host=127.0.0.1 user=postgres_user password=postgres_user port=25432 dbname=test sslmode=disable"
+	c, err = NewConfigByDSN(dsn)
+	assert.Nil(t, err)
+	t.Log(c)
+
 }
